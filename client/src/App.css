@@ -89,3 +89,52 @@ button {
 button:hover {
   background: #f9738d;
 }
+.avatar {
+  align-items: center;
+  align-self: center;
+  border: 4px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(133, 91, 104, 0.24);
+  color: #ffffff;
+  display: flex;
+  font-size: 32px;
+  font-weight: 800;
+  height: 120px;
+  justify-content: center;
+  overflow: hidden;
+  width: 120px;
+}
+
+.avatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.color-picker-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+input[type="color"] {
+  cursor: pointer;
+  height: 42px;
+  padding: 4px;
+  width: 64px;
+}
+
+.color-value {
+  color: #78656d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.color-preview {
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(133, 91, 104, 0.18);
+  display: inline-block;
+  height: 28px;
+  width: 28px;
+}
