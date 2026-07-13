@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 import "./App.css";
 
 
@@ -16,6 +17,25 @@ function App() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarColor, setAvatarColor] = useState("#ff8fa3");
   const [avatarPosition, setAvatarPosition] = useState({ x: 50, y: 50 });
+  const [socket, setSocket] = useState(null);
+
+useEffect(() => {
+  const newSocket = io("http://localhost:4000");
+
+  newSocket.on("player:moved", (data) => {
+    console.log("Player moved:", data);
+  });
+
+  newSocket.on("player:left", (playerId) => {
+    console.log("Player left:", playerId);
+  });
+
+  setSocket(newSocket);
+
+  return () => {
+    newSocket.disconnect();
+  };
+}, []);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -30,23 +50,32 @@ function App() {
       avatarUrl: avatarUrl.trim(),
       avatarColor,
     });
+    socket?.emit("player:join", {
+      displayName,
+      avatarUrl: avatarUrl.trim(),
+      avatarColor,
+      position: avatarPosition
+    });
   }
 
-function moveAvatar(event) {
-  const room = event.currentTarget.getBoundingClientRect();
+  function moveAvatar(event) {
+    const room = event.currentTarget.getBoundingClientRect();
 
-  // click = center of avatar, (x,y) = top left corner of avatar
-  const avatarSize = 132;
-  const x = event.clientX - room.left - avatarSize / 2;
-  const y = event.clientY - room.top - avatarSize / 2;
+    // click = center of avatar, (x,y) = top left corner of avatar
+    const avatarSize = 132;
+    const x = event.clientX - room.left - avatarSize / 2;
+    const y = event.clientY - room.top - avatarSize / 2;
 
-  // Ensures avatar is within room
-  setAvatarPosition({
-    x: Math.min(Math.max(x, 0), room.width - avatarSize),
-    y: Math.min(Math.max(y, 0), room.height - avatarSize)
-  });
-}
-  
+    // Ensures avatar is within room
+    const nextPosition = {
+      x: Math.min(Math.max(x, 0), room.width - avatarSize),
+      y: Math.min(Math.max(y, 0), room.height - avatarSize)
+    };
+
+    setAvatarPosition(nextPosition);
+    socket?.emit("player:move", nextPosition);
+  }
+
   /* GUEST ROOM */
   if (guest) {
     return (
