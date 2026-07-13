@@ -31,34 +31,62 @@ function App() {
     });
   }
 
+  /* GUEST ROOM */
   if (guest) {
     return (
-      <main className="app">
-        <section className="room">
-          <p className="eyebrow">Focus Room</p>
-          <h1>Welcome, {guest.displayName}</h1>
-          <p>You are now in the study room.</p>
-          <div className="avatar" style={{ backgroundColor: guest.avatarColor }}>
-          {guest.avatarUrl ? (
-            <img src={guest.avatarUrl} alt={`${guest.displayName} avatar`} />
-          ) : (
-            <span>{guest.displayName[0].toUpperCase()}</span>
-          )}
-        </div>
+      <main className="study-room-page">
+        <section className="study-room">
+          <header className="room-header">
+            <div>
+              <p className="eyebrow">Focus Room</p>
+              <h1>Study Room</h1>
+            </div>
+
+            <div className="guest-badge">
+              <div className="avatar small-avatar" style={{ backgroundColor: guest.avatarColor }}>
+                {guest.avatarUrl ? (
+                  <img src={guest.avatarUrl} alt={`${guest.displayName} avatar`} />
+                ) : (
+                  <span>{guest.displayName[0].toUpperCase()}</span>
+                )}
+              </div>
+              <span>{guest.displayName}</span>
+            </div>
+          </header>
+
+          <div className="room-stage">
+            <div className="avatar player-avatar" style={{ backgroundColor: guest.avatarColor }}>
+              {guest.avatarUrl ? (
+                <img src={guest.avatarUrl} alt={`${guest.displayName} avatar`} />
+              ) : (
+                <span>{guest.displayName[0].toUpperCase()}</span>
+              )}
+            </div>
+            <p className="stage-note">Main study room placeholder</p>
+          </div>
         </section>
+
+        <aside className="tool-panel">
+          <button type="button">Chat</button>
+          <button type="button">Pomodoro</button>
+          <button type="button">To-Do List</button>
+          <button type="button">Notepad</button>
+        </aside>
       </main>
     );
   }
 
+
+  /* GUEST CARD */
   return (
     <main className="app">
 
       <form className="guest-card" onSubmit={handleSubmit}>
-      <p className="eyebrow">Focus Room</p>
-      <h1>Enter as guest</h1>
-      <p className="guest-copy">
-        Choose a display name, or leave it blank to get one automatically.
-      </p>
+        <p className="eyebrow">Focus Room</p>
+        <h1>Enter as guest</h1>
+        <p className="guest-copy">
+          Choose a display name, or leave it blank to get one automatically.
+        </p>
 
         <label htmlFor="displayName">Display name</label>
         <input
