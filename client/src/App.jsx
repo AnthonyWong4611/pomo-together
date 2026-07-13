@@ -15,6 +15,7 @@ function App() {
   const [guestCount, setGuestCount] = useState(1);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarColor, setAvatarColor] = useState("#ff8fa3");
+  const [avatarPosition, setAvatarPosition] = useState({ x: 50, y: 50 });
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -27,10 +28,25 @@ function App() {
     setGuest({
       displayName,
       avatarUrl: avatarUrl.trim(),
-      avatarColor
+      avatarColor,
     });
   }
 
+function moveAvatar(event) {
+  const room = event.currentTarget.getBoundingClientRect();
+
+  // click = center of avatar, (x,y) = top left corner of avatar
+  const avatarSize = 132;
+  const x = event.clientX - room.left - avatarSize / 2;
+  const y = event.clientY - room.top - avatarSize / 2;
+
+  // Ensures avatar is within room
+  setAvatarPosition({
+    x: Math.min(Math.max(x, 0), room.width - avatarSize),
+    y: Math.min(Math.max(y, 0), room.height - avatarSize)
+  });
+}
+  
   /* GUEST ROOM */
   if (guest) {
     return (
@@ -54,8 +70,8 @@ function App() {
             </div>
           </header>
 
-          <div className="room-stage">
-            <div className="avatar player-avatar" style={{ backgroundColor: guest.avatarColor }}>
+          <div className="room-stage" onClick={moveAvatar}>
+            <div className="avatar player-avatar" style={{ backgroundColor: guest.avatarColor, left: avatarPosition.x, top: avatarPosition.y }}>
               {guest.avatarUrl ? (
                 <img src={guest.avatarUrl} alt={`${guest.displayName} avatar`} />
               ) : (
