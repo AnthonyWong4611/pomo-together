@@ -237,3 +237,32 @@ input[type="color"] {
 .remote-avatar {
   opacity: 0.86;
 }
+
+.online-list {
+  display: grid;
+  gap: 10px;
+}
+
+.online-list h2 {
+  color: #4b3f46;
+  font-size: 18px;
+  margin: 0;
+}
+
+.online-player {
+  align-items: center;
+  background: #ffffff;
+  border: 2px solid #f2b6c2;
+  border-radius: 14px;
+  display: flex;
+  font-weight: 800;
+  gap: 10px;
+  padding: 8px;
+}
+
+.list-avatar {
+  flex: 0 0 auto;
+  font-size: 14px;
+  height: 34px;
+  width: 34px;
+}
