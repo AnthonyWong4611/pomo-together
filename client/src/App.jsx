@@ -148,6 +148,15 @@ function App() {
 
         <aside className="tool-panel">
           <section className="online-list">
+          <h2>Tools</h2>
+          </section>
+
+          <button type="button">Chat</button>
+          <button type="button">Pomodoro</button>
+          <button type="button">To-Do List</button>
+          <button type="button">Notepad</button>
+
+          <section className="online-list">
             <h2>Online</h2>
 
             {onlinePlayers.map((player) => (
@@ -164,12 +173,9 @@ function App() {
             ))}
           </section>
 
-          <button type="button">Chat</button>
-          <button type="button">Pomodoro</button>
-          <button type="button">To-Do List</button>
-          <button type="button">Notepad</button>
+
         </aside>
-        
+
       </main>
     );
   }
