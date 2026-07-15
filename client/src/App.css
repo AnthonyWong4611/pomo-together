@@ -233,3 +233,7 @@ input[type="color"] {
     gap: 12px;
   }
 }
+
+.remote-avatar {
+  opacity: 0.86;
+}

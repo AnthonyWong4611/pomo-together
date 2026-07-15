@@ -28,10 +28,19 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   socket.on("player:join", (player) => {
-    players.set(socket.id, {
+    const joinedPlayer = {
       ...player,
       id: socket.id
-    });
+    };
+
+    players.set(socket.id, joinedPlayer);
+
+    socket.emit(
+      "players:current",
+      Array.from(players.values()).filter((savedPlayer) => savedPlayer.id !== socket.id)
+    );
+
+    socket.broadcast.emit("player:joined", joinedPlayer);
 
     console.log("Player joined:", socket.id);
   });
@@ -46,7 +55,7 @@ io.on("connection", (socket) => {
     player.position = position;
 
     socket.broadcast.emit("player:moved", {
-      id: socket.id,
+      ...player,
       position
     });
   });
