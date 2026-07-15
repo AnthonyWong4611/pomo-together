@@ -93,6 +93,15 @@ function App() {
 
   /* GUEST ROOM */
   if (guest) {
+    const onlinePlayers = [
+      {
+        id: "self",
+        displayName: guest.displayName,
+        avatarUrl: guest.avatarUrl,
+        avatarColor: guest.avatarColor
+      },
+      ...remotePlayers
+    ];
     return (
       <main className="study-room-page">
         <section className="study-room">
@@ -138,11 +147,29 @@ function App() {
         </section>
 
         <aside className="tool-panel">
+          <section className="online-list">
+            <h2>Online</h2>
+
+            {onlinePlayers.map((player) => (
+              <div className="online-player" key={player.id}>
+                <div className="avatar list-avatar" style={{ backgroundColor: player.avatarColor }}>
+                  {player.avatarUrl ? (
+                    <img src={player.avatarUrl} alt={`${player.displayName} avatar`} />
+                  ) : (
+                    <span>{player.displayName[0].toUpperCase()}</span>
+                  )}
+                </div>
+                <span>{player.displayName}</span>
+              </div>
+            ))}
+          </section>
+
           <button type="button">Chat</button>
           <button type="button">Pomodoro</button>
           <button type="button">To-Do List</button>
           <button type="button">Notepad</button>
         </aside>
+        
       </main>
     );
   }
