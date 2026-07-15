@@ -18,24 +18,39 @@ function App() {
   const [avatarColor, setAvatarColor] = useState("#ff8fa3");
   const [avatarPosition, setAvatarPosition] = useState({ x: 50, y: 50 });
   const [socket, setSocket] = useState(null);
+  const [remotePlayers, setRemotePlayers] = useState([]);
 
-useEffect(() => {
-  const newSocket = io("http://localhost:4000");
+  useEffect(() => {
+    const newSocket = io("http://localhost:4000");
 
-  newSocket.on("player:moved", (data) => {
-    console.log("Player moved:", data);
-  });
+    newSocket.on("players:current", (players) => {
+      setRemotePlayers(players);
+    });
 
-  newSocket.on("player:left", (playerId) => {
-    console.log("Player left:", playerId);
-  });
+    newSocket.on("player:joined", (player) => {
+      setRemotePlayers((current) => [...current, player]);
+    });
 
-  setSocket(newSocket);
+    newSocket.on("player:moved", (updatedPlayer) => {
+      setRemotePlayers((current) =>
+        current.map((player) =>
+          player.id === updatedPlayer.id ? updatedPlayer : player
+        )
+      );
+    });
 
-  return () => {
-    newSocket.disconnect();
-  };
-}, []);
+    newSocket.on("player:left", (playerId) => {
+      setRemotePlayers((current) =>
+        current.filter((player) => player.id !== playerId)
+      );
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -100,13 +115,24 @@ useEffect(() => {
           </header>
 
           <div className="room-stage" onClick={moveAvatar}>
-            <div className="avatar player-avatar" style={{ backgroundColor: guest.avatarColor, left: avatarPosition.x, top: avatarPosition.y }}>
+            <div className="avatar player-avatar" style={{ backgroundColor: guest.avatarColor, left: `${avatarPosition.x}px`, top: `${avatarPosition.y}px` }}>
               {guest.avatarUrl ? (
                 <img src={guest.avatarUrl} alt={`${guest.displayName} avatar`} />
               ) : (
                 <span>{guest.displayName[0].toUpperCase()}</span>
               )}
             </div>
+
+            {remotePlayers.map((player) => (
+              <div className="avatar player-avatar remote-avatar" key={player.id} style={{ backgroundColor: player.avatarColor, left: `${player.position.x}px`, top: `${player.position.y}px` }}>
+                {player.avatarUrl ? (
+                  <img src={player.avatarUrl} alt={`${player.displayName} avatar`} />
+                ) : (
+                  <span>{player.displayName[0].toUpperCase()}</span>
+                )}
+              </div>
+            ))}
+
             <p className="stage-note">Main study room placeholder</p>
           </div>
         </section>
