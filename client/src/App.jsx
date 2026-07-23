@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import "./App.css";
 
@@ -19,6 +19,10 @@ function App() {
   const [avatarPosition, setAvatarPosition] = useState({ x: 50, y: 50 });
   const [socket, setSocket] = useState(null);
   const [remotePlayers, setRemotePlayers] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const newSocket = io("http://localhost:4000");
@@ -45,12 +49,20 @@ function App() {
       );
     });
 
+    newSocket.on("chat:message", (message) => {
+      setChatMessages((current) => [...current, message]);
+    });
+
     setSocket(newSocket);
 
     return () => {
       newSocket.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -89,6 +101,23 @@ function App() {
 
     setAvatarPosition(nextPosition);
     socket?.emit("player:move", nextPosition);
+  }
+
+  function sendChatMessage(event) {
+    event.preventDefault();
+
+    const body = chatInput.trim();
+
+    if (!body || !guest) {
+      return;
+    }
+
+    socket?.emit("chat:send", {
+      body,
+      senderName: guest.displayName
+    });
+
+    setChatInput("");
   }
 
   /* GUEST ROOM */
@@ -148,10 +177,12 @@ function App() {
 
         <aside className="tool-panel">
           <section className="online-list">
-          <h2>Tools</h2>
+            <h2>Tools</h2>
           </section>
 
-          <button type="button">Chat</button>
+          <button type="button" onClick={() => setChatOpen((current) => !current)}>
+            Chat
+          </button>
           <button type="button">Pomodoro</button>
           <button type="button">To-Do List</button>
           <button type="button">Notepad</button>
@@ -175,7 +206,33 @@ function App() {
 
 
         </aside>
+        
+        {chatOpen && (
+          <section className="floating-chat">
+            <header className="chat-header">
+              <h2>Room Chat</h2>
+              <button type="button" onClick={() => setChatOpen(false)}>x</button>
+            </header>
 
+            <div className="chat-messages">
+              {chatMessages.map((message) => (
+                <p className="chat-line" key={message.id}>
+                  <strong>{message.senderName}:</strong> {message.body}
+                </p>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <form className="chat-form" onSubmit={sendChatMessage}>
+              <input
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder="Type a message"
+                value={chatInput}
+              />
+              <button type="submit">Send</button>
+            </form>
+          </section>
+        )}
       </main>
     );
   }

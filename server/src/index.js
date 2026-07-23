@@ -60,6 +60,21 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("chat:send", (message) => {
+    const player = players.get(socket.id);
+
+    if (!player || !message.body.trim()) {
+      return;
+    }
+
+    io.emit("chat:message", {
+      id: crypto.randomUUID(),
+      body: message.body.trim(),
+      senderId: socket.id,
+      senderName: player.displayName
+    });
+  });
+
   socket.on("disconnect", () => {
     players.delete(socket.id);
     socket.broadcast.emit("player:left", socket.id);
