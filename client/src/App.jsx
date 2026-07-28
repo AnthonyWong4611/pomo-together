@@ -22,6 +22,12 @@ function App() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
+  const [pomodoroOpen, setPomodoroOpen] = useState(false);
+  const [timerMode, setTimerMode] = useState("focus");
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(25 * 60);
+  const [focusMinutes, setFocusMinutes] = useState(25);
+  const [breakMinutes, setBreakMinutes] = useState(5);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -53,6 +59,16 @@ function App() {
       setChatMessages((current) => [...current, message]);
     });
 
+    newSocket.on("pomodoro:updated", (updatedPlayer) => {
+      setRemotePlayers((current) =>
+        current.map((player) =>
+          player.id === updatedPlayer.id
+            ? { ...player, pomodoro: updatedPlayer.pomodoro }
+            : player
+        )
+      );
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -63,6 +79,102 @@ function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  useEffect(() => {
+    if (!timerRunning) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setRemainingSeconds((current) => {
+        if (current <= 1) {
+          setTimerRunning(false);
+          return 0;
+        }
+
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [timerRunning]);
+
+  useEffect(() => {
+    if (!guest) {
+      return;
+    }
+
+    socket?.emit("pomodoro:update", {
+      mode: timerMode,
+      remainingSeconds,
+      running: timerRunning
+    });
+  }, [guest, socket, timerMode, remainingSeconds, timerRunning]);
+
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const leftoverSeconds = seconds % 60;
+
+    return `${minutes}:${leftoverSeconds.toString().padStart(2, "0")}`;
+  }
+
+  function formatPomodoroStatus(pomodoro) {
+    if (!pomodoro || pomodoro.mode === "idle") {
+      return "Idle";
+    }
+
+    const label = pomodoro.mode === "focus" ? "Focus" : "Break";
+    const pausedText = pomodoro.running ? "" : " paused";
+
+    return `${label} ${formatTime(pomodoro.remainingSeconds)}${pausedText}`;
+  }
+
+  function setFocusLength(event) {
+    const nextMinutes = Number(event.target.value);
+
+    setFocusMinutes(nextMinutes);
+
+    if (timerMode === "focus" && !timerRunning) {
+      setRemainingSeconds(nextMinutes * 60);
+    }
+  }
+
+  function setBreakLength(event) {
+    const nextMinutes = Number(event.target.value);
+
+    setBreakMinutes(nextMinutes);
+
+    if (timerMode === "break" && !timerRunning) {
+      setRemainingSeconds(nextMinutes * 60);
+    }
+  }
+
+  function skipTimer() {
+    const nextMode = timerMode === "focus" ? "break" : "focus";
+
+    setTimerMode(nextMode);
+    setTimerRunning(false);
+    setRemainingSeconds((nextMode === "focus" ? focusMinutes : breakMinutes) * 60);
+  }
+
+  function resetTimer() {
+    setTimerMode("focus");
+    setTimerRunning(false);
+    setRemainingSeconds(focusMinutes * 60);
+  }
+
+  function copyPomodoro(pomodoro) {
+    if (!pomodoro || pomodoro.mode === "idle") {
+      return;
+    }
+
+    setTimerMode(pomodoro.mode);
+    setRemainingSeconds(pomodoro.remainingSeconds);
+    setTimerRunning(pomodoro.running);
+    setPomodoroOpen(true);
+  }
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -124,10 +236,15 @@ function App() {
   if (guest) {
     const onlinePlayers = [
       {
-        id: "self",
-        displayName: guest.displayName,
-        avatarUrl: guest.avatarUrl,
-        avatarColor: guest.avatarColor
+      id: "self",
+      displayName: guest.displayName,
+      avatarUrl: guest.avatarUrl,
+      avatarColor: guest.avatarColor,
+      pomodoro: {
+        mode: timerMode,
+        remainingSeconds,
+        running: timerRunning
+      }
       },
       ...remotePlayers
     ];
@@ -183,7 +300,9 @@ function App() {
           <button type="button" onClick={() => setChatOpen((current) => !current)}>
             Chat
           </button>
-          <button type="button">Pomodoro</button>
+          <button type="button" onClick={() => setPomodoroOpen((current) => !current)}>
+            Pomodoro
+          </button>
           <button type="button">To-Do List</button>
           <button type="button">Notepad</button>
 
@@ -199,7 +318,17 @@ function App() {
                     <span>{player.displayName[0].toUpperCase()}</span>
                   )}
                 </div>
-                <span>{player.displayName}</span>
+                <div>
+                  <span>{player.displayName}</span>
+                  <button
+                    className="status-button"
+                    disabled={!player.pomodoro || player.pomodoro.mode === "idle"}
+                    onClick={() => copyPomodoro(player.pomodoro)}
+                    type="button"
+                  >
+                    {formatPomodoroStatus(player.pomodoro)}
+                  </button>
+                </div>
               </div>
             ))}
           </section>
@@ -231,6 +360,44 @@ function App() {
               />
               <button type="submit">Send</button>
             </form>
+          </section>
+        )}
+
+        {pomodoroOpen && (
+          <section className="floating-pomodoro">
+            <header className="chat-header">
+              <h2>Pomodoro</h2>
+              <button type="button" onClick={() => setPomodoroOpen(false)}>x</button>
+            </header>
+
+            <p className="timer-mode">{timerMode === "focus" ? "Focus" : "Break"}</p>
+            <p className="timer-display">{formatTime(remainingSeconds)}</p>
+
+            <div className="timer-controls">
+              <button type="button" onClick={() => setTimerRunning((current) => !current)}>
+                {timerRunning ? "Pause" : "Start"}
+              </button>
+              <button type="button" onClick={skipTimer}>Skip</button>
+              <button type="button" onClick={resetTimer}>Reset</button>
+            </div>
+
+            <label htmlFor="focusMinutes">Focus minutes</label>
+            <input
+              id="focusMinutes"
+              min="1"
+              onChange={setFocusLength}
+              type="number"
+              value={focusMinutes}
+            />
+
+            <label htmlFor="breakMinutes">Break minutes</label>
+            <input
+              id="breakMinutes"
+              min="1"
+              onChange={setBreakLength}
+              type="number"
+              value={breakMinutes}
+            />
           </section>
         )}
       </main>
