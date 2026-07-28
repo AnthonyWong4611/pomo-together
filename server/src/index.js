@@ -30,7 +30,12 @@ io.on("connection", (socket) => {
   socket.on("player:join", (player) => {
     const joinedPlayer = {
       ...player,
-      id: socket.id
+      id: socket.id,
+      pomodoro: {
+        mode: "idle",
+        remainingSeconds: 0,
+        running: false
+      }
     };
 
     players.set(socket.id, joinedPlayer);
@@ -72,6 +77,21 @@ io.on("connection", (socket) => {
       body: message.body.trim(),
       senderId: socket.id,
       senderName: player.displayName
+    });
+  });
+
+  socket.on("pomodoro:update", (pomodoro) => {
+    const player = players.get(socket.id);
+
+    if (!player) {
+      return;
+    }
+
+    player.pomodoro = pomodoro;
+
+    socket.broadcast.emit("pomodoro:updated", {
+      id: socket.id,
+      pomodoro
     });
   });
 
