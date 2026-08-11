@@ -28,6 +28,21 @@ function App() {
   const [remainingSeconds, setRemainingSeconds] = useState(25 * 60);
   const [focusMinutes, setFocusMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
+  const [todoOpen, setTodoOpen] = useState(false);
+  const [todoInput, setTodoInput] = useState("");
+  const [todos, setTodos] = useState(() => {
+    const savedTodos = localStorage.getItem("focus-room-todos");
+
+    if (!savedTodos) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(savedTodos);
+    } catch {
+      return [];
+    }
+  });
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -112,6 +127,10 @@ function App() {
       running: timerRunning
     });
   }, [guest, socket, timerMode, remainingSeconds, timerRunning]);
+
+  useEffect(() => {
+    localStorage.setItem("focus-room-todos", JSON.stringify(todos));
+  }, [todos]);
 
   function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
@@ -232,6 +251,56 @@ function App() {
     setChatInput("");
   }
 
+  function addTodo(event) {
+    event.preventDefault();
+
+    const text = todoInput.trim();
+
+    if (!text) {
+      return;
+    }
+
+    setTodos((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        text,
+        completed: false,
+        editing: false
+      }
+    ]);
+
+    setTodoInput("");
+  }
+
+  function toggleTodo(todoId) {
+    setTodos((current) =>
+      current.map((todo) =>
+        todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  }
+
+  function editTodo(todoId, text) {
+    setTodos((current) =>
+      current.map((todo) =>
+        todo.id === todoId ? { ...todo, text } : todo
+      )
+    );
+  }
+
+  function setTodoEditing(todoId, editing) {
+    setTodos((current) =>
+      current.map((todo) =>
+        todo.id === todoId ? { ...todo, editing } : todo
+      )
+    );
+  }
+
+  function deleteTodo(todoId) {
+    setTodos((current) => current.filter((todo) => todo.id !== todoId));
+  }
+
   /* GUEST ROOM */
   if (guest) {
     const onlinePlayers = [
@@ -303,7 +372,9 @@ function App() {
           <button type="button" onClick={() => setPomodoroOpen((current) => !current)}>
             Pomodoro
           </button>
-          <button type="button">To-Do List</button>
+          <button type="button" onClick={() => setTodoOpen((current) => !current)}>
+            To-Do List
+          </button>
           <button type="button">Notepad</button>
 
           <section className="online-list">
@@ -398,6 +469,59 @@ function App() {
               type="number"
               value={breakMinutes}
             />
+          </section>
+        )}
+
+        {todoOpen && (
+          <section className="floating-todo">
+            <header className="chat-header">
+              <h2>To-Do List</h2>
+              <button type="button" onClick={() => setTodoOpen(false)}>x</button>
+            </header>
+
+            <form className="todo-form" onSubmit={addTodo}>
+              <input
+                onChange={(event) => setTodoInput(event.target.value)}
+                placeholder="Add a task"
+                value={todoInput}
+              />
+              <button type="submit">Add</button>
+            </form>
+
+            <div className="todo-list">
+              {todos.length === 0 ? (
+                <p className="empty-todos">No todos yet</p>
+              ) : (
+                todos.map((todo) => (
+                  <div className="todo-item" key={todo.id}>
+                    <input
+                      checked={todo.completed}
+                      onChange={() => toggleTodo(todo.id)}
+                      type="checkbox"
+                    />
+
+                    {todo.editing ? (
+                      <input
+                        onBlur={() => setTodoEditing(todo.id, false)}
+                        onChange={(event) => editTodo(todo.id, event.target.value)}
+                        value={todo.text}
+                      />
+                    ) : (
+                      <span className={todo.completed ? "todo-completed" : ""}>
+                        {todo.text}
+                      </span>
+                    )}
+
+                    <button type="button" onClick={() => setTodoEditing(todo.id, !todo.editing)}>
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => deleteTodo(todo.id)}>
+                      Delete
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </section>
         )}
       </main>
